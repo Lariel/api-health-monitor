@@ -1,0 +1,21 @@
+{
+  "name": "api-health-monitor",
+  "version": "0.1.0",
+  "description": "CLI para monitoramento de APIs",
+  "main": "bin/index.js",
+  "scripts": {
+    "postinstall": "node ./bin/postinstall",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "monitor",
+    "api",
+    "health",
+    "cli"
+  ],
+  "author": "Lariel",
+  "license": "ISC",
+  "bin": {  
+    "mon": "./bin/index.js"  
+  }
+}
