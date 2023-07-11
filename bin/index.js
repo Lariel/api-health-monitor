@@ -1,5 +1,8 @@
 #! /usr/bin/env node
+const versionInfo = require('../package').version;
+
 const P_HELP = '-help';
+const P_VERSION = '-version';
 const paramsList = process.argv.slice(2);
 handleParams(paramsList);
 
@@ -37,6 +40,16 @@ function handleHelpParam(param) {
     param.includes(P_HELP) ? doHelp() : null;
 }
 
+function handleVersionParam(param) {
+
+    const showVersion = () => {
+        console.log(`Version: ${versionInfo}`);
+    }
+
+    param.includes(P_VERSION) ? showVersion() : null;
+
+}
+
 
 function handleParams(paramsList) {
 
@@ -46,8 +59,8 @@ function handleParams(paramsList) {
     }
 
     paramsList.forEach(param => {
-        console.log('Param: ', param);
         handleHelpParam(param);
+        handleVersionParam(param);
     });
 
 }
