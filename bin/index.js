@@ -1,9 +1,10 @@
 #! /usr/bin/env node
 const versionInfo = require('../package').version;
+const { P_HELP, P_VERSION, P_SERVICE, P_TAGS, P_DEBUG } = require('./params');
 
-const P_HELP = '-help';
-const P_VERSION = '-version';
 const paramsList = process.argv.slice(2);
+const GREETINGS = `To show the help information, type mon -help`;
+const validParams = [];
 handleParams(paramsList);
 
 function handleHelpParam(param) {
@@ -15,11 +16,11 @@ function handleHelpParam(param) {
     |           Sintaxe geral: mon -service=SERVICE_NAME -tags=TAG1,TAG2,TAG3 -debug                                  |
     |                                                                                                                 |
     |           Options:                                                                                              |
-    |               -help             Show this help                                               [boolean]          |
-    |               -version          Show version information                                     [boolean]          |
-    |               -service          The only required param is the service name to check         [string]           |
-    |               -tags             List of tags as comma separated                              [string]           |
-    |               -debug            Shows more information while running                         [boolean]          |
+    |               ${P_HELP.value}             ${P_HELP.helpText}                                               [${P_HELP.type}]          |
+    |               ${P_VERSION.value}          ${P_VERSION.helpText}                                     [${P_VERSION.type}]          |
+    |               ${P_SERVICE.value}          ${P_SERVICE.helpText}         [${P_SERVICE.type}]           |
+    |               ${P_TAGS.value}             ${P_TAGS.helpText}                              [${P_TAGS.type}]           |
+    |               ${P_DEBUG.value}            ${P_DEBUG.helpText}                         [${P_DEBUG.type}]          |
     |                                                                                                                 |
     |       General:                                                                                                  |
     |               Tags are used to create a logical grouping for monitoring different applications                  |
@@ -33,35 +34,72 @@ function handleHelpParam(param) {
     `
 
     const doHelp = () => {
-        paramHelp = true;
+        validParams.push(P_HELP.value);
         console.log(HELP_TEXT);
     }
 
-    param.includes(P_HELP) ? doHelp() : null;
+    param.includes(P_HELP.value) ? doHelp() : null;
 }
 
 function handleVersionParam(param) {
 
     const showVersion = () => {
+        validParams.push(P_VERSION.value);
         console.log(`Version: ${versionInfo}`);
     }
 
-    param.includes(P_VERSION) ? showVersion() : null;
+    param.includes(P_VERSION.value) ? showVersion() : null;
+
+}
+
+function handleServiceParam(param) {
+
+    const doSomething = () => {
+        validParams.push(P_SERVICE.value);
+        console.log(P_SERVICE.value + ' works');
+    }
+
+    param.includes(P_SERVICE.value) ? doSomething() : null;
+
+}
+
+function handleTagsParam(param) {
+
+    const doSomething = () => {
+        validParams.push(P_TAGS.value);
+        console.log(P_TAGS.value + ' works');
+    }
+
+    param.includes(P_TAGS.value) ? doSomething() : null;
+
+}
+
+function handleDebugParam(param) {
+
+    const doSomething = () => {
+        validParams.push(P_DEBUG.value);
+        console.log(P_DEBUG.value + ' works');
+    }
+
+    param.includes(P_DEBUG.value) ? doSomething() : null;
 
 }
 
 
-function handleParams(paramsList) {
 
-    if (paramsList.length == 0) {
-        const GREETINGS = `To show the help information, type mon -help`;
-        console.log(GREETINGS);
-    }
+function handleParams(paramsList) {
 
     paramsList.forEach(param => {
         handleHelpParam(param);
         handleVersionParam(param);
+        handleServiceParam(param);
+        handleTagsParam(param);
+        handleDebugParam(param);
     });
+
+    if (paramsList.length == 0 || validParams.length == 0) {
+        console.log(GREETINGS);
+    }
 
 }
 
