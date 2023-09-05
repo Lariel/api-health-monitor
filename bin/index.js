@@ -1,11 +1,72 @@
 #! /usr/bin/env node
+const https = require('https');
+
 const versionInfo = require('../package').version;
 const { P_HELP, P_VERSION, P_SERVICE, P_TAGS, P_DEBUG } = require('./params');
 
 const paramsList = process.argv.slice(2);
 const GREETINGS = `To show the help information, type mon -help`;
 const validParams = [];
+const baseUrl = '';
+const monitorUrl = 'actuator/health';
+let isDebuging = false;
+
 handleParams(paramsList);
+
+
+function handlePrintError(error, body, service) {
+
+    if (body.includes('HTTP Status 404')) {
+        return isDebuging ? body : '404';
+    } else if (body.includes('404 page not found')) {
+        return isDebuging ? body : '404';
+    } else if (body.includes('Em manutenção')) {
+        return isDebuging ? body : 'OFF';
+    } else if (body.includes('Bad Gateway')) {
+        return isDebuging ? body : 'Bad Gateway'
+    } else {
+        console.log('Falha no ',service);
+        console.log('Error: ', error);
+        console.log('Body: ', body);
+    }
+}
+
+function printResponse(body, url, serviceName) {
+    if (isDebuging) {
+        console.log(` Resposta da request em ${url}`);
+    }
+
+    let status = '';
+    
+    try {
+        status = JSON.parse(body).status;
+    } catch (error) {
+        status = 'DOWN -> '+handlePrintError(error, body, serviceName);
+    }
+   
+    console.log(` ${serviceName}: ${status}`);
+}
+
+function sendRequest(serviceName) {
+    const url = `${baseUrl}/${serviceName}/${monitorUrl}`;
+    
+    if (isDebuging) {
+        console.log(` Verificando ${url}`);
+    }
+
+    https.get(
+        url,
+        res => {
+            let body = '';
+            res.on('data', function(chunk) {
+                body += chunk;
+            });
+            res.on('end', function() {
+                printResponse(body, url, serviceName);
+            });
+        }
+    );
+}
 
 function handleHelpParam(param) {
 
@@ -18,7 +79,7 @@ function handleHelpParam(param) {
     |           Options:                                                                                              |
     |               ${P_HELP.value}             ${P_HELP.helpText}                                               [${P_HELP.type}]          |
     |               ${P_VERSION.value}          ${P_VERSION.helpText}                                     [${P_VERSION.type}]          |
-    |               ${P_SERVICE.value}          ${P_SERVICE.helpText}         [${P_SERVICE.type}]           |
+    |               ${P_SERVICE.value}          ${P_SERVICE.helpText}                                    [${P_SERVICE.type}]           |
     |               ${P_TAGS.value}             ${P_TAGS.helpText}                              [${P_TAGS.type}]           |
     |               ${P_DEBUG.value}            ${P_DEBUG.helpText}                         [${P_DEBUG.type}]          |
     |                                                                                                                 |
@@ -45,7 +106,7 @@ function handleVersionParam(param) {
 
     const showVersion = () => {
         validParams.push(P_VERSION.value);
-        console.log(`Version: ${versionInfo}`);
+        console.log(` Version: ${versionInfo}`);
     }
 
     param.includes(P_VERSION.value) ? showVersion() : null;
@@ -54,12 +115,12 @@ function handleVersionParam(param) {
 
 function handleServiceParam(param) {
 
-    const doSomething = () => {
+    const getServiceFromParam = () => {
         validParams.push(P_SERVICE.value);
-        console.log(P_SERVICE.value + ' works');
+        sendRequest(param.split('=')[1]);
     }
 
-    param.includes(P_SERVICE.value) ? doSomething() : null;
+    param.includes(P_SERVICE.value) ? getServiceFromParam() : null;
 
 }
 
@@ -76,12 +137,14 @@ function handleTagsParam(param) {
 
 function handleDebugParam(param) {
 
-    const doSomething = () => {
+    const activeDebug = () => {
         validParams.push(P_DEBUG.value);
-        console.log(P_DEBUG.value + ' works');
+        console.log(' Debug mode active!');
+        console.log(` Input params: ${paramsList}`);
+        isDebuging = true;
     }
 
-    param.includes(P_DEBUG.value) ? doSomething() : null;
+    param.includes(P_DEBUG.value) ? activeDebug() : null;
 
 }
 
@@ -91,10 +154,10 @@ function handleParams(paramsList) {
 
     paramsList.forEach(param => {
         handleHelpParam(param);
-        handleVersionParam(param);
-        handleServiceParam(param);
-        handleTagsParam(param);
         handleDebugParam(param);
+        handleVersionParam(param);
+        handleTagsParam(param);
+        handleServiceParam(param);
     });
 
     if (paramsList.length == 0 || validParams.length == 0) {
