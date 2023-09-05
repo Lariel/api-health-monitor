@@ -10,7 +10,7 @@ const P_VERSION = {
 };
 const P_SERVICE = {
     value: '-service',
-    helpText: 'The only required param is the service name to check',
+    helpText: 'The service name to check',
     type: 'string'
 };
 const P_TAGS = {
