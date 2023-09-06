@@ -2,7 +2,8 @@
 const https = require('https');
 
 const versionInfo = require('../package').version;
-const { P_HELP, P_VERSION, P_SERVICE, P_TAGS, P_DEBUG } = require('./params');
+const { P_HELP, P_VERSION, P_SERVICE, P_TAG, P_DEBUG } = require('./params');
+const tagListImported = require('./tags');
 
 const paramsList = process.argv.slice(2);
 const GREETINGS = `To show the help information, type mon -help`;
@@ -53,19 +54,21 @@ function sendRequest(serviceName) {
     if (isDebuging) {
         console.log(` Verificando ${url}`);
     }
-
-    https.get(
-        url,
-        res => {
-            let body = '';
-            res.on('data', function(chunk) {
-                body += chunk;
-            });
-            res.on('end', function() {
-                printResponse(body, url, serviceName);
-            });
-        }
-    );
+    return new Promise((resolve) => {
+        https.get(
+            url,
+            res => {
+                let body = '';
+                res.on('data', function(chunk) {
+                    body += chunk;
+                });
+                res.on('end', function() {
+                    printResponse(body, url, serviceName);
+                    resolve();
+                });
+            }
+        );
+    });
 }
 
 function handleHelpParam(param) {
@@ -80,7 +83,7 @@ function handleHelpParam(param) {
     |               ${P_HELP.value}             ${P_HELP.helpText}                                               [${P_HELP.type}]          |
     |               ${P_VERSION.value}          ${P_VERSION.helpText}                                     [${P_VERSION.type}]          |
     |               ${P_SERVICE.value}          ${P_SERVICE.helpText}                                    [${P_SERVICE.type}]           |
-    |               ${P_TAGS.value}             ${P_TAGS.helpText}                              [${P_TAGS.type}]           |
+    |               ${P_TAG.value}              ${P_TAG.helpText}                                                [${P_TAG.type}]           |
     |               ${P_DEBUG.value}            ${P_DEBUG.helpText}                         [${P_DEBUG.type}]          |
     |                                                                                                                 |
     |       General:                                                                                                  |
@@ -117,21 +120,29 @@ function handleServiceParam(param) {
 
     const getServiceFromParam = () => {
         validParams.push(P_SERVICE.value);
-        sendRequest(param.split('=')[1]);
+        const service = param.split('=')[1];
+        sendRequest(service);
     }
 
     param.includes(P_SERVICE.value) ? getServiceFromParam() : null;
 
 }
 
-function handleTagsParam(param) {
-
-    const doSomething = () => {
-        validParams.push(P_TAGS.value);
-        console.log(P_TAGS.value + ' works');
+function handleTagParam(param) {
+    
+    const doSomething = async () => {
+        validParams.push(P_TAG.value);
+        console.log(tagListImported);
+        const tagName = param.split('=')[1];
+        console.log(tagName);
+        const tagParam = tagListImported.find(tag => tag.name == tagName)
+        console.log(tagParam);
+        for (const service of tagParam.services) {
+            await sendRequest(service);
+        }
     }
 
-    param.includes(P_TAGS.value) ? doSomething() : null;
+    param.includes(P_TAG.value) ? doSomething() : null;
 
 }
 
@@ -156,7 +167,7 @@ function handleParams(paramsList) {
         handleHelpParam(param);
         handleDebugParam(param);
         handleVersionParam(param);
-        handleTagsParam(param);
+        handleTagParam(param);
         handleServiceParam(param);
     });
 
