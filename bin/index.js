@@ -4,12 +4,17 @@ const https = require('https');
 const versionInfo = require('../package').version;
 const { P_HELP, P_VERSION, P_SERVICE, P_TAG, P_DEBUG } = require('./params');
 const { ENV, TAGS } = require(`${process.env.API_MON}/configs`);
-console.log(`Using environment ${ENV.envName}`);
 const paramsList = process.argv.slice(2);
 const GREETINGS = `To show the help information, type mon -help`;
 const validParams = [];
 const baseUrl = `${ENV.baseUrl}`;
 const monitorPath = `${ENV.monitorPath}`;
+
+const colRequestWidth = 70;
+const colResponseWidth = 20;
+const colReponseTimeWidth = 20;
+const tableWidth = colRequestWidth+colResponseWidth+colReponseTimeWidth;
+
 let isDebuging = false;
 
 handleParams(paramsList);
@@ -31,7 +36,22 @@ function handlePrintError(error, body, service) {
     }
 }
 
-function printResponse(body, url, serviceName) {
+function now() {
+    const date = new Date();
+    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const year = date.getFullYear()
+    const timestamp = date.getTime();
+    const time = new Date(timestamp).toLocaleTimeString('pt-BR');
+
+    return `${day}-${month}-${year} às ${time}`;
+}
+
+function calcResponseTime(start, end) {
+    return end-start;
+}
+
+function printResponse(body, url, serviceName, responseTime) {
     if (isDebuging) {
         console.log(` Resposta da request em ${url}`);
     }
@@ -43,8 +63,9 @@ function printResponse(body, url, serviceName) {
     } catch (error) {
         status = 'DOWN -> '+handlePrintError(error, body, serviceName);
     }
-   
-    console.log(` ${serviceName}: ${status}`);
+
+    const logLine = `| ${url}`.padEnd(colRequestWidth-1,' ')+`|   ${status}`.padEnd(colResponseWidth, ' ')+`|    ${responseTime} ms`.padEnd(colReponseTimeWidth, ' ')+'|';
+    console.log(logLine);
 }
 
 function sendRequest(serviceName) {
@@ -53,6 +74,7 @@ function sendRequest(serviceName) {
     if (isDebuging) {
         console.log(` Verificando ${url}`);
     }
+    const startTimestamp = new Date().getTime();
     return new Promise((resolve) => {
         https.get(
             url,
@@ -62,7 +84,8 @@ function sendRequest(serviceName) {
                     body += chunk;
                 });
                 res.on('end', function() {
-                    printResponse(body, url, serviceName);
+                    const endTimestamp = new Date().getTime();
+                    printResponse(body, url, serviceName, calcResponseTime(startTimestamp,endTimestamp));
                     resolve();
                 });
             }
@@ -118,10 +141,11 @@ function handleVersionParam(param) {
 
 function handleServiceParam(param) {
 
-    const getServiceFromParam = () => {
+    const getServiceFromParam = async () => {
         validParams.push(P_SERVICE.value);
         const service = param.split('=')[1];
-        sendRequest(service);
+        console.log(`--- Request `.padEnd(colRequestWidth,'-')+` Response `.padEnd(colResponseWidth, '-')+` Response Time `.padEnd(colReponseTimeWidth, '-'));
+        await sendRequest(service);
     }
 
     param.includes(P_SERVICE.value) ? getServiceFromParam() : null;
@@ -137,9 +161,14 @@ function handleTagParam(param) {
         //console.log(tagName);
         const tagParam = TAGS.find(tag => tag.name == tagName)
         //console.log(tagParam);
+        
+        console.log(`--- Verificação iniciada em ${now()}`.padEnd(tableWidth,'-'));
+        console.log(`--- Request `.padEnd(colRequestWidth,'-')+` Response `.padEnd(colResponseWidth, '-')+` Response Time `.padEnd(colReponseTimeWidth, '-'));
         for (const service of tagParam.services) {
             await sendRequest(service);
         }
+        console.log(`-`.padEnd(tableWidth,'-'));
+        console.log(`--- Verificação encerrada em ${now()}`.padEnd(tableWidth,'-'));
     }
 
     param.includes(P_TAG.value) ? doSomething() : null;
@@ -167,6 +196,9 @@ function handleParams(paramsList) {
         handleHelpParam(param);
         handleDebugParam(param);
         handleVersionParam(param);
+    });
+
+    paramsList.forEach(param => {
         handleTagParam(param);
         handleServiceParam(param);
     });
