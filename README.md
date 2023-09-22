@@ -6,8 +6,8 @@
     ```js
         const ENV = {
             envName: 'Nome do seu ambiente',
-            baseUrl: 'https://...'
-            monitorPath: `path-monitoramento` //ex: actuator/health, management/health
+            baseUrl: 'https://...',
+            monitorPath: 'path-monitoramento' //ex: actuator/health, management/health
         };
 
         const TAGS = [
