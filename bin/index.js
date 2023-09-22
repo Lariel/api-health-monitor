@@ -3,17 +3,16 @@ const https = require('https');
 
 const versionInfo = require('../package').version;
 const { P_HELP, P_VERSION, P_SERVICE, P_TAG, P_DEBUG } = require('./params');
-const tagListImported = require('./tags');
-
+const { ENV, TAGS } = require(`${process.env.API_MON}/configs`);
+console.log(`Using environment ${ENV.envName}`);
 const paramsList = process.argv.slice(2);
 const GREETINGS = `To show the help information, type mon -help`;
 const validParams = [];
-const baseUrl = '';
-const monitorUrl = 'actuator/health';
+const baseUrl = `https://${ENV.hostName}.pucrs.br`;
+const monitorPath = `${ENV.monitorPath}`;
 let isDebuging = false;
 
 handleParams(paramsList);
-
 
 function handlePrintError(error, body, service) {
 
@@ -49,7 +48,7 @@ function printResponse(body, url, serviceName) {
 }
 
 function sendRequest(serviceName) {
-    const url = `${baseUrl}/${serviceName}/${monitorUrl}`;
+    const url = `${baseUrl}/${serviceName}/${monitorPath}`;
     
     if (isDebuging) {
         console.log(` Verificando ${url}`);
@@ -132,11 +131,11 @@ function handleTagParam(param) {
     
     const doSomething = async () => {
         validParams.push(P_TAG.value);
-        console.log(tagListImported);
+        //console.log(TAGS);
         const tagName = param.split('=')[1];
-        console.log(tagName);
-        const tagParam = tagListImported.find(tag => tag.name == tagName)
-        console.log(tagParam);
+        //console.log(tagName);
+        const tagParam = TAGS.find(tag => tag.name == tagName)
+        //console.log(tagParam);
         for (const service of tagParam.services) {
             await sendRequest(service);
         }
