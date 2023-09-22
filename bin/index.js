@@ -8,7 +8,7 @@ console.log(`Using environment ${ENV.envName}`);
 const paramsList = process.argv.slice(2);
 const GREETINGS = `To show the help information, type mon -help`;
 const validParams = [];
-const baseUrl = `https://${ENV.hostName}.pucrs.br`;
+const baseUrl = `${ENV.baseUrl}`;
 const monitorPath = `${ENV.monitorPath}`;
 let isDebuging = false;
 
