@@ -76,7 +76,8 @@ function handleHelpParam(param) {
     ------------------------------------------------------------------------------------------------------------------
     |   Help:                                                                                                         |
     |       Usage:                                                                                                    |
-    |           Sintaxe geral: mon -service=SERVICE_NAME -tags=TAG1,TAG2,TAG3 -debug                                  |
+    |           $ mon -service=SERVICE_NAME                                                                           |
+    |           $ mon -tag=TAG                                                                                        |
     |                                                                                                                 |
     |           Options:                                                                                              |
     |               ${P_HELP.value}             ${P_HELP.helpText}                                               [${P_HELP.type}]          |
