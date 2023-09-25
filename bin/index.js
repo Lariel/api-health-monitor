@@ -18,7 +18,7 @@ let debugParam;
 const colRequestWidth = 70;
 const colResponseWidth = 20;
 const colReponseTimeWidth = 20;
-const tableWidth = colRequestWidth+colResponseWidth+colReponseTimeWidth;
+const consoleWidth = colRequestWidth+colResponseWidth+colReponseTimeWidth;
 
 handleParams(paramsList);
 
@@ -119,6 +119,9 @@ function handleHelpParam(param) {
     |           case of this feature is to monitoring a set of services that is mainteined by the same                |
     |           team or squad.                                                                                        |
     |                                                                                                                 |
+    |      Configs found:                                                                                             |
+    |           Environments: ${ENVS.length}                                                                                       |
+    |           Tags: ${TAGS.length}                                                                                               |
     |                                                                                                                 |
     |                                                                                                                 |
     ------------------------------------------------------------------------------------------------------------------
@@ -127,6 +130,8 @@ function handleHelpParam(param) {
     const doHelp = () => {
         helpParam = true;
         console.log(HELP_TEXT);
+        //console.log('ENVS found:',ENVS);
+        //console.log('TAGS found:',TAGS);
     }
 
     param.includes(P_HELP.value) ? doHelp() : null;
@@ -190,13 +195,13 @@ function handleDebugParam(param) {
 async function check() {
 
     if (tagParam) {
-        console.log(`--- Verificação iniciada em ${now()}`.padEnd(tableWidth,'-'));
+        console.log(`--- Verificação iniciada em ${now()}`.padEnd(consoleWidth,'-'));
         console.log(`--- Request `.padEnd(colRequestWidth,'-')+` Response `.padEnd(colResponseWidth, '-')+` Response Time `.padEnd(colReponseTimeWidth, '-'));
         for (const service of tagParam.services) {
             await sendRequest(service);
         }
-        console.log(`-`.padEnd(tableWidth,'-'));
-        console.log(`--- Verificação encerrada em ${now()}`.padEnd(tableWidth,'-'));
+        console.log(`-`.padEnd(consoleWidth,'-'));
+        console.log(`--- Verificação encerrada em ${now()}`.padEnd(consoleWidth,'-'));
     } else if (serviceParam) {
         console.log(`--- Request `.padEnd(colRequestWidth,'-')+` Response `.padEnd(colResponseWidth, '-')+` Response Time `.padEnd(colReponseTimeWidth, '-'));
         await sendRequest(serviceParam);
