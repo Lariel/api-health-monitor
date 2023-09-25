@@ -13,6 +13,11 @@ const P_SERVICE = {
     helpText: 'The service name to check',
     type: 'string'
 };
+const P_ENV = {
+    value: '-env',
+    helpText: 'Required. Environment used to call requests',
+    type: 'string'
+};
 const P_TAG = {
     value: '-tag',
     helpText: 'Tag to search',
@@ -24,4 +29,4 @@ const P_DEBUG = {
     type: 'boolean'
 };
 
-module.exports = {P_HELP, P_VERSION, P_SERVICE, P_TAG, P_DEBUG};
+module.exports = {P_HELP, P_VERSION, P_SERVICE, P_ENV, P_TAG, P_DEBUG};

@@ -2,33 +2,36 @@
 const https = require('https');
 
 const versionInfo = require('../package').version;
-const { P_HELP, P_VERSION, P_SERVICE, P_TAG, P_DEBUG } = require('./params');
-const { ENV, TAGS } = require(`${process.env.API_MON}/configs`);
+
+const { P_HELP, P_VERSION, P_SERVICE, P_ENV, P_TAG, P_DEBUG } = require('./params');
+const { ENVS, TAGS } = require(`${process.env.API_MON}/configs`);
 const paramsList = process.argv.slice(2);
 const GREETINGS = `To show the help information, type mon -help`;
-const validParams = [];
-const baseUrl = `${ENV.baseUrl}`;
-const monitorPath = `${ENV.monitorPath}`;
+
+let helpParam;
+let versionParam;
+let envParam;
+let tagParam;
+let serviceParam;
+let debugParam;
 
 const colRequestWidth = 70;
 const colResponseWidth = 20;
 const colReponseTimeWidth = 20;
 const tableWidth = colRequestWidth+colResponseWidth+colReponseTimeWidth;
 
-let isDebuging = false;
-
 handleParams(paramsList);
 
 function handlePrintError(error, body, service) {
 
     if (body.includes('HTTP Status 404')) {
-        return isDebuging ? body : '404';
+        return debugParam ? body : '404';
     } else if (body.includes('404 page not found')) {
-        return isDebuging ? body : '404';
+        return debugParam ? body : '404';
     } else if (body.includes('Em manutenção')) {
-        return isDebuging ? body : 'OFF';
+        return debugParam ? body : 'OFF';
     } else if (body.includes('Bad Gateway')) {
-        return isDebuging ? body : 'Bad Gateway'
+        return debugParam ? body : 'Bad Gateway'
     } else {
         console.log('Falha no ',service);
         console.log('Error: ', error);
@@ -52,7 +55,7 @@ function calcResponseTime(start, end) {
 }
 
 function printResponse(body, url, serviceName, responseTime) {
-    if (isDebuging) {
+    if (debugParam) {
         console.log(` Resposta da request em ${url}`);
     }
 
@@ -69,9 +72,9 @@ function printResponse(body, url, serviceName, responseTime) {
 }
 
 function sendRequest(serviceName) {
-    const url = `${baseUrl}/${serviceName}/${monitorPath}`;
+    const url = `${envParam.baseUrl}/${serviceName}/${envParam.monitorPath}`;
     
-    if (isDebuging) {
+    if (debugParam) {
         console.log(` Verificando ${url}`);
     }
     const startTimestamp = new Date().getTime();
@@ -99,12 +102,13 @@ function handleHelpParam(param) {
     ------------------------------------------------------------------------------------------------------------------
     |   Help:                                                                                                         |
     |       Usage:                                                                                                    |
-    |           $ mon -service=SERVICE_NAME                                                                           |
-    |           $ mon -tag=TAG                                                                                        |
+    |           $ mon -env=YOUR_ENV -service=SERVICE_NAME                                                             |
+    |           $ mon -env=YOUR_ENV -tag=TAG                                                                          |
     |                                                                                                                 |
     |           Options:                                                                                              |
     |               ${P_HELP.value}             ${P_HELP.helpText}                                               [${P_HELP.type}]          |
     |               ${P_VERSION.value}          ${P_VERSION.helpText}                                     [${P_VERSION.type}]          |
+    |               ${P_ENV.value}              ${P_ENV.helpText}                  [${P_ENV.type}]           |    
     |               ${P_SERVICE.value}          ${P_SERVICE.helpText}                                    [${P_SERVICE.type}]           |
     |               ${P_TAG.value}              ${P_TAG.helpText}                                                [${P_TAG.type}]           |
     |               ${P_DEBUG.value}            ${P_DEBUG.helpText}                         [${P_DEBUG.type}]          |
@@ -121,7 +125,7 @@ function handleHelpParam(param) {
     `
 
     const doHelp = () => {
-        validParams.push(P_HELP.value);
+        helpParam = true;
         console.log(HELP_TEXT);
     }
 
@@ -131,7 +135,7 @@ function handleHelpParam(param) {
 function handleVersionParam(param) {
 
     const showVersion = () => {
-        validParams.push(P_VERSION.value);
+        versionParam = true;
         console.log(` Version: ${versionInfo}`);
     }
 
@@ -141,27 +145,51 @@ function handleVersionParam(param) {
 
 function handleServiceParam(param) {
 
-    const getServiceFromParam = async () => {
-        validParams.push(P_SERVICE.value);
-        const service = param.split('=')[1];
-        console.log(`--- Request `.padEnd(colRequestWidth,'-')+` Response `.padEnd(colResponseWidth, '-')+` Response Time `.padEnd(colReponseTimeWidth, '-'));
-        await sendRequest(service);
+    const setServiceFromParam = () => {
+        serviceParam = param.split('=')[1];
     }
 
-    param.includes(P_SERVICE.value) ? getServiceFromParam() : null;
+    param.includes(P_SERVICE.value) ? setServiceFromParam() : null;
 
+}
+
+function handleEnvParam(param) {
+
+    const buildEnvInfos = () => {
+        const envAlias = param.split('=')[1];
+        envParam = ENVS.find(env => env.alias == envAlias);
+    }
+
+    param.includes(P_ENV.value) ? buildEnvInfos() : null;
 }
 
 function handleTagParam(param) {
     
-    const doSomething = async () => {
-        validParams.push(P_TAG.value);
-        //console.log(TAGS);
+    const setTagFromParam = () => {
         const tagName = param.split('=')[1];
-        //console.log(tagName);
-        const tagParam = TAGS.find(tag => tag.name == tagName)
-        //console.log(tagParam);
-        
+        tagParam = TAGS.find(tag => tag.name == tagName)
+    }
+
+    param.includes(P_TAG.value) ? setTagFromParam() : null;
+
+}
+
+function handleDebugParam(param) {
+
+    const activeDebug = () => {
+        debugParam = true;
+        console.log(' Debug mode active!');
+        console.log(` Input params: ${paramsList}`);
+        debugParam = true;
+    }
+
+    param.includes(P_DEBUG.value) ? activeDebug() : null;
+
+}
+
+async function check() {
+
+    if (tagParam) {
         console.log(`--- Verificação iniciada em ${now()}`.padEnd(tableWidth,'-'));
         console.log(`--- Request `.padEnd(colRequestWidth,'-')+` Response `.padEnd(colResponseWidth, '-')+` Response Time `.padEnd(colReponseTimeWidth, '-'));
         for (const service of tagParam.services) {
@@ -169,43 +197,39 @@ function handleTagParam(param) {
         }
         console.log(`-`.padEnd(tableWidth,'-'));
         console.log(`--- Verificação encerrada em ${now()}`.padEnd(tableWidth,'-'));
+    } else if (serviceParam) {
+        console.log(`--- Request `.padEnd(colRequestWidth,'-')+` Response `.padEnd(colResponseWidth, '-')+` Response Time `.padEnd(colReponseTimeWidth, '-'));
+        await sendRequest(serviceParam);
+    } else if (!helpParam && !versionParam) {
+        console.error('Params -tag or -service not found!');
     }
-
-    param.includes(P_TAG.value) ? doSomething() : null;
-
 }
-
-function handleDebugParam(param) {
-
-    const activeDebug = () => {
-        validParams.push(P_DEBUG.value);
-        console.log(' Debug mode active!');
-        console.log(` Input params: ${paramsList}`);
-        isDebuging = true;
-    }
-
-    param.includes(P_DEBUG.value) ? activeDebug() : null;
-
-}
-
-
 
 function handleParams(paramsList) {
+    
+    if (paramsList.length == 0) {
+        console.info(GREETINGS);
+        return;
+    }
 
     paramsList.forEach(param => {
         handleHelpParam(param);
         handleDebugParam(param);
         handleVersionParam(param);
+        handleEnvParam(param);
     });
+
+    if (!envParam && !helpParam && !versionParam) {
+        console.error('Param environment not found!');
+        return;
+    }
 
     paramsList.forEach(param => {
         handleTagParam(param);
         handleServiceParam(param);
     });
 
-    if (paramsList.length == 0 || validParams.length == 0) {
-        console.log(GREETINGS);
-    }
+    check();
 
 }
 

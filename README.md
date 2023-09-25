@@ -4,11 +4,20 @@
 - Criar uma pasta onde será guardado o arquivo de configuração. Sugestão `api-mon`
 - Dentro desta pasta, criar um arquivo `configs.js` com o seguinte conteúdo:
     ```js
-        const ENV = {
-            envName: 'Nome do seu ambiente',
-            baseUrl: 'https://...',
-            monitorPath: 'path-monitoramento' //ex: actuator/health, management/health
-        };
+        const ENVS = [
+            {
+                alias: 'alias', // Parâmetro usado para chamada dos serviços do ambiente
+                envName: 'Ex de nome do ambiente',
+                baseUrl: 'https://...',
+                monitorPath: 'path-monitoramento' //ex: actuator/health, management/health
+            },
+            {
+                alias: 'alias',
+                envName: 'Ex de nome do ambiente',
+                baseUrl: 'https://...',
+                monitorPath: 'path-monitoramento' //ex: actuator/health, management/health
+            }
+        ];
 
         const TAGS = [
             {
@@ -30,7 +39,7 @@
         ];
 
 
-        module.exports = { TAGS, ENV };
+        module.exports = { TAGS, ENVS };
     ```
 - Configurar uma variável de ambiente com o nome `API_MON` apontando para a pasta onde o arquivo `configs.js` foi criado.
 
