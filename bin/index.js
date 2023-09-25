@@ -15,23 +15,32 @@ let tagParam;
 let serviceParam;
 let debugParam;
 
-const colRequestWidth = 70;
-const colResponseWidth = 20;
-const colReponseTimeWidth = 20;
-const consoleWidth = colRequestWidth+colResponseWidth+colReponseTimeWidth;
+let totalRequests = 0;
+let totalSuccessRequests = 0;
+let totalFailedRequests = 0;
+
+let colRequestWidth = 75;
+let colResponseWidth = 20;
+let colReponseTimeWidth = 20;
+let consoleWidth = colRequestWidth+colResponseWidth+colReponseTimeWidth;
 
 handleParams(paramsList);
 
 function handlePrintError(error, body, service) {
+    totalFailedRequests++;
 
-    if (body.includes('HTTP Status 404')) {
-        return debugParam ? body : '404';
+    if (error == 500) {
+        return debugParam ? `${error} ${JSON.parse(body).error}`: '';
+    } else if (body.includes('HTTP Status 404')) {
+        return debugParam ? '-> 404' : '';
     } else if (body.includes('404 page not found')) {
-        return debugParam ? body : '404';
+        return debugParam ? '-> 404' : '';
     } else if (body.includes('Em manutenção')) {
-        return debugParam ? body : 'OFF';
+        return debugParam ? '-> OFF' : '';
     } else if (body.includes('Bad Gateway')) {
-        return debugParam ? body : 'Bad Gateway'
+        return debugParam ? '-> Bad Gateway' : '';
+    } else if (error == 'DOWN') {
+        return debugParam ? '-> DOWN' : '';
     } else {
         console.log('Falha no ',service);
         console.log('Error: ', error);
@@ -54,17 +63,28 @@ function calcResponseTime(start, end) {
     return end-start;
 }
 
-function printResponse(body, url, serviceName, responseTime) {
+function calcPercentSuccess() {
     if (debugParam) {
-        console.log(` Resposta da request em ${url}`);
+        console.log(`${totalSuccessRequests} sucessos obtidos, e ${totalFailedRequests} erros, de um total de ${totalRequests} requests.`);
     }
+
+    return `${Math.round((totalSuccessRequests/totalRequests)*100)}%`;
+}
+
+function printResponse(body, url, serviceName, responseTime) {
+    totalRequests++;
 
     let status = '';
     
     try {
         status = JSON.parse(body).status;
+        if (status == 'UP') {
+            totalSuccessRequests++;
+        } else {
+            status = `DOWN ${handlePrintError(status, body, serviceName)}`;
+        }
     } catch (error) {
-        status = 'DOWN -> '+handlePrintError(error, body, serviceName);
+        status = `DOWN ${handlePrintError(error, body, serviceName)}`;
     }
 
     const logLine = `| ${url}`.padEnd(colRequestWidth-1,' ')+`|   ${status}`.padEnd(colResponseWidth, ' ')+`|    ${responseTime} ms`.padEnd(colReponseTimeWidth, ' ')+'|';
@@ -74,9 +94,6 @@ function printResponse(body, url, serviceName, responseTime) {
 function sendRequest(serviceName) {
     const url = `${envParam.baseUrl}/${serviceName}/${envParam.monitorPath}`;
     
-    if (debugParam) {
-        console.log(` Verificando ${url}`);
-    }
     const startTimestamp = new Date().getTime();
     return new Promise((resolve) => {
         https.get(
@@ -130,8 +147,6 @@ function handleHelpParam(param) {
     const doHelp = () => {
         helpParam = true;
         console.log(HELP_TEXT);
-        //console.log('ENVS found:',ENVS);
-        //console.log('TAGS found:',TAGS);
     }
 
     param.includes(P_HELP.value) ? doHelp() : null;
@@ -185,7 +200,6 @@ function handleDebugParam(param) {
         debugParam = true;
         console.log(' Debug mode active!');
         console.log(` Input params: ${paramsList}`);
-        debugParam = true;
     }
 
     param.includes(P_DEBUG.value) ? activeDebug() : null;
@@ -201,7 +215,7 @@ async function check() {
             await sendRequest(service);
         }
         console.log(`-`.padEnd(consoleWidth,'-'));
-        console.log(`--- Verificação encerrada em ${now()}`.padEnd(consoleWidth,'-'));
+        console.log(`--- Verificação encerrada em ${now()} com ${calcPercentSuccess()} de sucesso `.padEnd(consoleWidth,'-'));
     } else if (serviceParam) {
         console.log(`--- Request `.padEnd(colRequestWidth,'-')+` Response `.padEnd(colResponseWidth, '-')+` Response Time `.padEnd(colReponseTimeWidth, '-'));
         await sendRequest(serviceParam);
