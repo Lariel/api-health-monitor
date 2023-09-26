@@ -1,6 +1,6 @@
 {
   "name": "api-health-monitor",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CLI para monitoramento de APIs",
   "main": "bin/index.js",
   "scripts": {
