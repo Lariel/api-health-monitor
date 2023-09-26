@@ -44,7 +44,7 @@
 - Configurar uma variável de ambiente com o nome `API_MON` apontando para a pasta onde o arquivo `configs.js` foi criado.
 
 ### Instalação global
-Executar `npm i -g .` na pasta raiz do projeto.
+Executar `npm i -g api-health-monitor` para instalar o projeto.
 
 ### Execução
 Após a instalação global, executar `mon -help` em qualquer local, e seguir os passos descritos no helper.
