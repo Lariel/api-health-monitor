@@ -1,8 +1,12 @@
 {
   "name": "api-health-monitor",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "CLI para monitoramento de APIs",
   "main": "bin/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Lariel/api-health-monitor.git"
+  },
   "scripts": {
     "postinstall": "node ./bin/postinstall",
     "test": "echo \"Error: no test specified\" && exit 1"
