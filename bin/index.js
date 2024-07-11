@@ -7,6 +7,7 @@ const { P_HELP, P_VERSION, P_SERVICE, P_ENV, P_TAG, P_DEBUG } = require('./param
 const { ENVS, TAGS } = require(`${process.env.API_MON}/configs`);
 const paramsList = process.argv.slice(2);
 const GREETINGS = `To show the help information, type mon -help`;
+const INVALID_PARAMS = `Invalid params.`;
 
 let helpParam;
 let versionParam;
@@ -120,12 +121,13 @@ function handleHelpParam(param) {
     |   Help:                                                                                                         |
     |       Usage:                                                                                                    |
     |           $ mon -env=YOUR_ENV -service=SERVICE_NAME                                                             |
+    |           $ mon -service=SERVICE_NAME                                                                           |
     |           $ mon -env=YOUR_ENV -tag=TAG                                                                          |
     |                                                                                                                 |
     |           Options:                                                                                              |
     |               ${P_HELP.value}             ${P_HELP.helpText}                                               [${P_HELP.type}]          |
     |               ${P_VERSION.value}          ${P_VERSION.helpText}                                     [${P_VERSION.type}]          |
-    |               ${P_ENV.value}              ${P_ENV.helpText}                  [${P_ENV.type}]           |    
+    |               ${P_ENV.value}              ${P_ENV.helpText}                            [${P_ENV.type}]           |    
     |               ${P_SERVICE.value}          ${P_SERVICE.helpText}                                    [${P_SERVICE.type}]           |
     |               ${P_TAG.value}              ${P_TAG.helpText}                                                [${P_TAG.type}]           |
     |               ${P_DEBUG.value}            ${P_DEBUG.helpText}                         [${P_DEBUG.type}]          |
@@ -174,6 +176,7 @@ function handleServiceParam(param) {
 }
 
 function handleEnvParam(param) {
+    if (debugParam) {console.log(`handleEnvParam ${param}`)};
 
     const buildEnvInfos = () => {
         const envAlias = param.split('=')[1];
@@ -209,6 +212,7 @@ function handleDebugParam(param) {
 async function check() {
 
     if (tagParam) {
+        if (debugParam) {console.log('Rodando com tagParam ',tagParam)};
         console.log(`--- Verificação iniciada em ${now()}`.padEnd(consoleWidth,'-'));
         console.log(`--- Request `.padEnd(colRequestWidth,'-')+` Response `.padEnd(colResponseWidth, '-')+` Response Time `.padEnd(colReponseTimeWidth, '-'));
         for (const service of tagParam.services) {
@@ -216,9 +220,19 @@ async function check() {
         }
         console.log(`-`.padEnd(consoleWidth,'-'));
         console.log(`--- Verificação encerrada em ${now()} com ${calcPercentSuccess()} de sucesso `.padEnd(consoleWidth,'-'));
-    } else if (serviceParam) {
+    } else if (serviceParam && envParam) {
+        if (debugParam) {console.log(`Rodando com serviceParam ${serviceParam} e envParam ${envParam}`)};
         console.log(`--- Request `.padEnd(colRequestWidth,'-')+` Response `.padEnd(colResponseWidth, '-')+` Response Time `.padEnd(colReponseTimeWidth, '-'));
         await sendRequest(serviceParam);
+    } else if (serviceParam && !envParam) {
+        if (debugParam) {console.log(`Rodando com serviceParam ${serviceParam} e envParam ${envParam}`)};
+        console.log(`--- Request `.padEnd(colRequestWidth,'-')+` Response `.padEnd(colResponseWidth, '-')+` Response Time `.padEnd(colReponseTimeWidth, '-'));
+        for (const env of ENVS) {
+            handleEnvParam(`${P_ENV.value}=${env.alias}`)
+            await sendRequest(serviceParam);
+        }
+        console.log(`-`.padEnd(consoleWidth,'-'));
+        console.log(`--- Verificação encerrada em ${now()} com ${calcPercentSuccess()} de sucesso `.padEnd(consoleWidth,'-'));
     } else if (!helpParam && !versionParam) {
         console.error('Params -tag or -service not found!');
     }
@@ -236,20 +250,16 @@ function handleParams(paramsList) {
         handleDebugParam(param);
         handleVersionParam(param);
         handleEnvParam(param);
-    });
-
-    if (!envParam && !helpParam && !versionParam) {
-        console.error('Param environment not found!');
-        return;
-    }
-
-    paramsList.forEach(param => {
         handleTagParam(param);
         handleServiceParam(param);
     });
 
+    if (((!envParam && !serviceParam) || (tagParam && serviceParam)) 
+        && !helpParam && !versionParam) {
+        console.error(INVALID_PARAMS +GREETINGS);
+        return;
+    }
+
     check();
 
 }
-
-
