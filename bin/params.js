@@ -15,7 +15,7 @@ const P_SERVICE = {
 };
 const P_ENV = {
     value: '-env',
-    helpText: 'Required. Environment used to call requests',
+    helpText: 'Environment used to call requests',
     type: 'string'
 };
 const P_TAG = {
